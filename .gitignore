@@ -36,4 +36,4 @@ nosetests.xml
 .pydevproject
 
 # Data Directories
-*data/
+data/
