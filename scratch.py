@@ -36,3 +36,28 @@ os.getcwd()
 
 string.count()
 string.find()
+
+counts.groupby('name').count.sum()
+counts.pivot()
+
+counts.value_counts # If you return a series
+
+
+    # rows = []
+    # index = []  
+
+    # for row_index, row in places.iterrows():
+    #     placename = row.loc['name']
+    #     count = text.count(placename)
+    #     entry = {'row_index': row_index,
+    #              'name': placename,
+    #              'count': count}
+    #     if count > 0:
+    #         print 'Found %i entries for place %s.' %(count, placename)
+    #         rows.append(entry)
+    #         index.append(row_index)
+
+    # counts = DataFrame(rows, index=index)
+    # return(counts)
+
+

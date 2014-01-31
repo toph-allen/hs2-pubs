@@ -13,7 +13,7 @@ geonamedir = datadir + 'geonames/'
 outdir = 'out/'
 
 cities1000 = 'cities1000.txt'
-countryInfo = 'countryInfo.txt'
+countryfile = 'countryInfo.txt'
 
 
 def get_article_paths(articledir):
@@ -50,40 +50,13 @@ def get_geoname_dataframe(geonamefile):
 
 
 def get_countryinfo_dataframe(countryfile):
-    countries = pd.io.parsers.read_table(geonamedir + countryfile,
-        encoding='utf-8')
+    countries = pd.io.parsers.read_table(geonamedir + countryfile, encoding='utf-8')
     return(countries)
 
 
-def get_country_matches(path, countries, tag):
-    """Given an article, the list of countries and a tag name, searches
-    the text of the given tags for matches of country.
-    """
-
-    articlesoup = BeautifulSoup(open(path, 'r'), 'lxml')
-
-    tags = articlesoup.find_all(tag)
-    text = ''
-
-    for tag in tags:
-        tagtext = tag.get_text() + '\n\n'
-        text += tagtext
-
-    matches = [] 
-
-    for row_index, row in countries.iterrows():
-        countryname = row.loc['Country']
-        count = text.count(countryname)
-        if count > 0:
-            # print 'Matched country %s.' %(count, countryname)
-            matches.append(row.loc['ISO'])
-
-    return(matches)
-
-
-def get_place_matches(path, places, tag):
-    """Given an article, a list of places and a tag name, searches the
-    text of the given tags for matches of places in the article text.
+def get_matches(path, places, tag):
+    """Given an article, a list of places and a tag name. Searches the
+    text of the given tag for matches of places in the article text.
     Returns a list of row indices for the given 'places' DataFrame."""
 
     articlesoup = BeautifulSoup(open(path, 'r'), 'lxml')
@@ -93,7 +66,7 @@ def get_place_matches(path, places, tag):
 
     for tag in tags:
         tagtext = tag.get_text() + '\n\n'
-        text += tagtext
+        text += tagtext   
 
     matches = [] 
 
@@ -101,27 +74,23 @@ def get_place_matches(path, places, tag):
         placename = row.loc['name']
         count = text.count(placename)
         if count > 0:
+            print 'Found %i entries for place %s.' %(count, placename)
             matches.append(row_index)
+
     return(matches)
 
 
-def get_all_matches(articlepaths, places, countries, tag):
+def get_all_matches(articlepaths, places, tag):
     allmatches = []
-    n = len(articlepaths)
-    for i, path in enumerate(articlepaths):
-        print 'Working on article %i of %i...' % (i, n)
-        countrymatches = get_country_matches(path, countries, tag)
-        criterion = places['countrycode'].map(lambda x: x in countrymatches)
-        matches = get_place_matches(path, places[criterion], tag)
-        print 'Matched %i places in %i countries.' % (len(matches),
-            len(countrymatches))
+    for path in articlepaths:
+        print 'Working on %s.' %path
+        matches = get_matches(path, places, tag)
         allmatches.extend(matches)
-        print 'Total matches: %i' %len(allmatches)
     return(allmatches)
 
 
-def count_all_matches(articlepaths, places, countries, tag):
-    allmatches = get_all_matches(articlepaths, places, countries, tag)
+def count_all_matches(articlepaths, places, tag):
+    allmatches = get_all_matches(articlepaths, places, tag)
     counts = Counter(allmatches)
     counts = Series(counts)
     counts = DataFrame(counts)
@@ -129,15 +98,12 @@ def count_all_matches(articlepaths, places, countries, tag):
     return(counts)
 
 
-
-
-
 def main():
     articledir, geonamefile, tag = argv
     articlepaths = get_article_paths(articledir)
     places = get_geoname_dataframe(geonamefile)
     countries = get_countryinfo_dataframe(countryfile)
-    counts = count_all_matches(articlepaths, places, countries, tag)
+    counts = count_all_matches(articlepaths, places, tag)
     joined = counts.join(places)
     matches.to_csv(outdir + 'matched_places.csv', encoding = 'utf-8')
 
