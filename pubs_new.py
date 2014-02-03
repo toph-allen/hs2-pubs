@@ -131,19 +131,25 @@ def get_all_matches(articlepaths, places, countries, tag):
         except:
             pass
 
-        allmatches = allmatches.append(matches, ignore_index=True)
+        matches = matches.drop_duplicates(cols="row_index")
 
-        print 'Total matches: %i' %len(allmatches.index)
+        print "Before"
+        print allmatches
+        allmatches = allmatches.append(matches, ignore_index=True)
+        print "After"
+        print allmatches
+
+        print 'Total matches: %i' %len(allmatches)
     return(allmatches)
 
 
-# def count_all_matches(articlepaths, places, countries, tag):
-#     allmatches = get_all_matches(articlepaths, places, countries, tag)
-#     counts = Counter(allmatches)
-#     counts = Series(counts)
-#     counts = DataFrame(counts)
-#     counts.columns = ["count"]
-#     return(counts)
+def count_all_matches(articlepaths, places, countries, tag):
+    allmatches = get_all_matches(articlepaths, places, countries, tag)
+    counts = Counter(allmatches)
+    counts = Series(counts)
+    counts = DataFrame(counts)
+    counts.columns = ["count"]
+    return(counts)
 
 
 
@@ -154,8 +160,8 @@ def main():
     articlepaths = get_article_paths(articledir)
     places = get_geoname_dataframe(geonamefile)
     countries = get_countryinfo_dataframe(countryfile)
-    # counts = count_all_matches(articlepaths, places, countries, tag)
-    # joined = counts.join(places)
+    counts = count_all_matches(articlepaths, places, countries, tag)
+    joined = counts.join(places)
     matches.to_csv(outdir + 'matched_places.csv', encoding = 'utf-8')
 
 
