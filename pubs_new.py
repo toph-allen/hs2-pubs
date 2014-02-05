@@ -1,10 +1,11 @@
 import os
+from sys import argv
+from collections import Counter
+
 import numpy as np
 from pandas import Series, DataFrame
 import pandas as pd
 from bs4 import BeautifulSoup
-from collections import Counter
-from sys import argv
 
 datadir = 'data/'
 articledir = datadir + 'articles/'
@@ -34,16 +35,16 @@ def get_geoname_dataframe(geonamefile):
                 'countrycode', 'cc2', 'admin1code', 'admin2code',
                 'admin3code', 'admin4code', 'population', 'elevation',
                 'dem', 'timezone', 'modificationdate']
-    dtypes = {'geonameid' : 'int64', 'name' : 'object',
-              'asciiname' : 'object', 'alternatenames' : 'object',
-              'latitude' : 'float64', 'longitude' : 'float64',
-              'featureclass' : 'object', 'featurecode' : 'object',
-              'countrycode' : 'object','cc2' : 'object',
-              'admin1code' : 'object', 'admin2code' : 'object',
-              'admin3code' : 'object', 'admin4code' : 'object',
-              'population' : 'int64', 'elevation' : 'float64',
-              'dem' : 'int64', 'timezone' : 'object',
-              'modificationdate' : 'object'}
+    dtypes = {'geonameid': 'int64', 'name': 'object',
+              'asciiname': 'object', 'alternatenames': 'object',
+              'latitude': 'float64', 'longitude': 'float64',
+              'featureclass': 'object', 'featurecode': 'object',
+              'countrycode': 'object', 'cc2': 'object',
+              'admin1code': 'object', 'admin2code': 'object',
+              'admin3code': 'object', 'admin4code': 'object',
+              'population': 'int64', 'elevation': 'float64',
+              'dem': 'int64', 'timezone': 'object',
+              'modificationdate': 'object'}
     places = pd.io.parsers.read_table(geonamedir + geonamefile,
                                       header=None, names=colnames,
                                       dtype=dtypes, encoding='utf-8')
@@ -52,7 +53,7 @@ def get_geoname_dataframe(geonamefile):
 
 def get_countryinfo_dataframe(countryfile):
     countries = pd.io.parsers.read_table(geonamedir + countryfile,
-        encoding='utf-8')
+                                         encoding='utf-8')
     return(countries)
 
 
@@ -60,7 +61,7 @@ def get_country_matches(text, countries, tag):
     """Given an article, the list of countries and a tag name, searches
     the text of the given tags for matches of country.
     """
-    matches = [] 
+    matches = []
     for row_index, row in countries.iterrows():
         countryname = row.loc['Country']
         count = text.count(countryname)
@@ -74,7 +75,7 @@ def get_place_matches(text, places, tag):
     """Given an article, a list of places and a tag name, searches the
     text of the given tags for matches of places in the article text.
     Returns a list of row indices for the given 'places' DataFrame."""
-    matches = [] 
+    matches = []
     for row_index, row in places.iterrows():
         placename = row.loc['name']
         count = text.count(placename)
@@ -106,11 +107,13 @@ def get_all_matches(articlepaths, places, countries, tag):
 
         matches = get_place_matches(text, places[criterion], tag)
         print 'Matched %i places in %i countries.' % (len(matches),
-            len(countrymatches))
+                                                      len(countrymatches))
 
         matches = DataFrame({'row_index': matches})
 
-        # Originally, wanted to put the publication date for 'ppub' but not all articles have that.
+        # Originally, wanted to put the publication date for 'ppub' but not
+        # all articles have that.
+
         try:
             matches['year'] = int(articlesoup.front.find(name='pub-date', attrs={'pub-type': 'ppub'}).year.get_text())
         except:
@@ -131,28 +134,19 @@ def get_all_matches(articlepaths, places, countries, tag):
         except:
             pass
 
-        matches = matches.drop_duplicates(cols="row_index")
-
-        print "Before"
-        print allmatches
         allmatches = allmatches.append(matches, ignore_index=True)
-        print "After"
-        print allmatches
 
-        print 'Total matches: %i' %len(allmatches)
+        print 'Total matches: %i' % len(allmatches.index)
     return(allmatches)
 
 
-def count_all_matches(articlepaths, places, countries, tag):
-    allmatches = get_all_matches(articlepaths, places, countries, tag)
-    counts = Counter(allmatches)
-    counts = Series(counts)
-    counts = DataFrame(counts)
-    counts.columns = ["count"]
-    return(counts)
-
-
-
+# def count_all_matches(articlepaths, places, countries, tag):
+#     allmatches = get_all_matches(articlepaths, places, countries, tag)
+#     counts = Counter(allmatches)
+#     counts = Series(counts)
+#     counts = DataFrame(counts)
+#     counts.columns = ["count"]
+#     return(counts)
 
 
 def main():
@@ -160,9 +154,9 @@ def main():
     articlepaths = get_article_paths(articledir)
     places = get_geoname_dataframe(geonamefile)
     countries = get_countryinfo_dataframe(countryfile)
-    counts = count_all_matches(articlepaths, places, countries, tag)
-    joined = counts.join(places)
-    matches.to_csv(outdir + 'matched_places.csv', encoding = 'utf-8')
+    # counts = count_all_matches(articlepaths, places, countries, tag)
+    # joined = counts.join(places)
+    matches.to_csv(outdir + 'matched_places.csv', encoding='utf-8')
 
 
 if __name__ == '__main__':

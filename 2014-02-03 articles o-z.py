@@ -1,14 +1,14 @@
 import datetime
 from pubs import *
 
-articlepaths = get_article_paths(testdir)
+articlepaths = get_article_paths('/Users/toph/PMC Articles/articles.O-Z')
 places = get_geoname_dataframe(cities1000)
 countries = get_countryinfo_dataframe(countryInfo)
 
 t1 = datetime.datetime.now()
 affcounts = get_all_matches(articlepaths, places, countries, 'aff')
 
-affcounts.to_csv(outdir + 'matched_places_aff.csv', encoding = 'utf-8')
+affcounts.to_csv(outdir + 'matched_places_aff o-z.csv', encoding = 'utf-8')
 t2 = datetime.datetime.now()
 tdaff = t2 - t1
 tdaff
@@ -16,7 +16,7 @@ tdaff
 t1 = datetime.datetime.now()
 pcounts = get_all_matches(articlepaths, places, countries, 'p')
 
-pcounts.to_csv(outdir + 'matched_places_p.csv', encoding = 'utf-8')
+pcounts.to_csv(outdir + 'matched_places_p o-z.csv', encoding = 'utf-8')
 t2 = datetime.datetime.now()
 tdp = t2 - t1
 tdp
