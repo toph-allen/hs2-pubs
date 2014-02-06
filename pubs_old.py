@@ -18,6 +18,13 @@ cities1000 = 'cities1000.txt'
 countryInfo = 'countryInfo.txt'
 
 
+def build_test_paths():
+    articlepaths = get_article_paths(testdir)
+    places = get_geoname_dataframe(cities1000)
+    countries = get_countryinfo_dataframe(countryInfo)
+    return articlepaths, places, countries
+
+
 def get_article_paths(articledir):
     paths = []
     for (dirpath, dirs, files) in os.walk(articledir):
@@ -151,9 +158,9 @@ def get_all_matches(articlepaths, places, countries, tag):
 
 def main():
     articledir, geonamefile, tag = argv
-    articlepaths = get_article_paths(articledir)
-    places = get_geoname_dataframe(geonamefile)
-    countries = get_countryinfo_dataframe(countryfile)
+    articlepaths = get_article_paths(testdir)
+    places = get_geoname_dataframe(cities1000)
+    countries = get_countryinfo_dataframe(countryInfo)
     # counts = count_all_matches(articlepaths, places, countries, tag)
     # joined = counts.join(places)
     matches.to_csv(outdir + 'matched_places.csv', encoding='utf-8')

@@ -77,7 +77,7 @@ def get_single_article_matches(path, places, countries, tag):
     x.get_tag_text(tag)
     x.match_countries(countries)
     x.match_places(places)
-    print(('Found %i matches.' % len(x.places)))
+    print('Found %i matches.' % len(x.places))
     return(x.give_dataframe())
 
 
@@ -87,8 +87,8 @@ def get_all_matches(articlepaths, places, countries, tag):
     for i, path in enumerate(articlepaths):
         matches = get_single_article_matches(path, places, countries, tag)
         allmatches = allmatches.append(matches, ignore_index=True)
-        print(('Matches in article %i of %i: %i.'
-              ' Total matches: %i' % (i+1, n, len(matches), len(allmatches))))
+        print('Matches in article %i of %i: %i.'
+              ' Total matches: %i' % (i+1, n, len(matches), len(allmatches)))
     return(allmatches)
 
 

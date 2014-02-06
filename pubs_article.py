@@ -5,16 +5,6 @@ from pandas import Series, DataFrame
 import pandas as pd
 from bs4 import BeautifulSoup
 
-datadir = 'data/'
-articledir = datadir + 'articles/'
-testdir = datadir + 'testarticles/'
-geonamedir = datadir + 'geonames/'
-outdir = 'out/'
-pubmeddir = 'pubmed/'
-
-cities1000 = 'cities1000.txt'
-countryInfo = 'countryInfo.txt'
-
 
 class article:
     def __init__(self, file):
@@ -29,19 +19,20 @@ class article:
             self.meta['year'] = int(front.find('pub-date').year.get_text())
             self.meta['pub_type'] = front.find('pub-date').attrs['pub-type']
         except:
-            pass
+            self.meta['year'] = None
+            self.meta['pub-type'] = None
         try:
             self.meta['journal'] = front.find('journal-title').get_text()
         except:
-            pass
+            self.meta['journal'] = None
         try:
             self.meta['doi'] = front.find(name='article-id', attrs={'pub-id-type': 'doi'}).get_text()
         except:
-            pass
+            self.meta['doi'] = None
         try:
             self.meta['pmid'] = front.find(name='article-id', attrs={'pub-id-type': 'pmid'}).get_text()
         except:
-            pass
+            self.meta['pmid'] = None
 
     def get_tag_text(self, tag):
         self.text = ''
@@ -79,10 +70,14 @@ class article:
     def give_dataframe(self):
         keeps = ['geonameid', 'name', 'asciiname', 'latitude', 'longitude',
                  'population']
-        export = self.places[keeps]
+        try:
+            export = self.places[keeps]
+        except:
+            return DataFrame()
         export['year'] = self.meta['year']
         export['pub_type'] = self.meta['pub_type']
         export['journal'] = self.meta['journal']
         export['doi'] = self.meta['doi']
         export['pmid'] = self.meta['pmid']
+        export['row_index'] = export.index
         return(export)
