@@ -2,18 +2,18 @@ import datetime
 
 from pubs import *
 
-t1 = datetime.datetime.now()
 articlepaths, places, countries = build_test_paths()
 tag = 'p'
-allmatches = get_all_matches_starmap(articlepaths, places, countries, tag)
+
+t1 = datetime.datetime.now()
+
+for i, chunk in enumerate(grouper(articlepaths, 40)):
+    allmatches = get_all_matches_starmap(articlepaths, places, countries, tag)
+    allmatches.to_csv(outdir + 'parallel_scratch{:}.csv'.format(i), encoding='utf-8')
+    del allmatches
+
 t2 = datetime.datetime.now()
-t2 - t1
+print(t2 - t1)
 
 
-# partial_get_single_article_matches = partial(get_single_article_matches,
-#                                              places=places,
-#                                              countries=countries,
-#                                              tag=tag)
 
-# pool = Pool(4)
-# matches_list = pool.map(partial_get_single_article_matches, articlepaths)
