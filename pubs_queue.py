@@ -249,9 +249,12 @@ def main():
     tag = 'p'
 
     # Prepare to iterate
-    chunk_size = 1000
+    chunk_size = 10000
     chunks = chunker(articlepaths, chunk_size)
     numchunks = ceil(len(articlepaths)/chunk_size)
+
+    print('About to start matching places from {} articles in chunks of {}.\n'
+          'That\'s {} chunks.'.format(len(articlepaths), chunk_size, numchunks))
 
     allmatches = matchbox(articlepaths)
 
