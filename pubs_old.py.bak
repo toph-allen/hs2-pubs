@@ -1,11 +1,18 @@
+
+
 import os
 from sys import argv
 from collections import Counter
+from functools import partial
+from multiprocessing import Pool
+from itertools import repeat
 
 import numpy as np
 from pandas import Series, DataFrame
 import pandas as pd
 from bs4 import BeautifulSoup
+
+from pubs_article import article
 
 datadir = 'data/'
 articledir = datadir + 'articles/'
@@ -16,6 +23,7 @@ pubmeddir = 'pubmed/'
 
 cities1000 = 'cities1000.txt'
 countryInfo = 'countryInfo.txt'
+
 
 
 def build_test_paths():
@@ -64,86 +72,50 @@ def get_countryinfo_dataframe(countryfile):
     return(countries)
 
 
-def get_country_matches(text, countries, tag):
-    """Given an article, the list of countries and a tag name, searches
-    the text of the given tags for matches of country.
-    """
-    matches = []
-    for row_index, row in countries.iterrows():
-        countryname = row.loc['Country']
-        count = text.count(countryname)
-        if count > 0:
-            # print 'Matched country %s.' %(count, countryname)
-            matches.append(row.loc['ISO'])
-    return(matches)
-
-
-def get_place_matches(text, places, tag):
-    """Given an article, a list of places and a tag name, searches the
-    text of the given tags for matches of places in the article text.
-    Returns a list of row indices for the given 'places' DataFrame."""
-    matches = []
-    for row_index, row in places.iterrows():
-        placename = row.loc['name']
-        count = text.count(placename)
-        if count > 0:
-            matches.append(row_index)
-    return(matches)
+def get_single_article_matches(path, places, countries, tag):
+    x = article(path)
+    x.get_tag_text(tag)
+    x.match_countries(countries)
+    x.match_places(places)
+    print(('Found %i matches.' % len(x.places)))
+    return(x.give_dataframe())
 
 
 def get_all_matches(articlepaths, places, countries, tag):
     allmatches = DataFrame()
     n = len(articlepaths)
-
     for i, path in enumerate(articlepaths):
-        print 'Working on article %i of %i...' % (i + 1, n)
-
-        article = open(path, 'r')
-        articlesoup = BeautifulSoup(article, 'lxml')
-        article.close()
-
-        tags = articlesoup.find_all(tag)
-        text = ''
-
-        for t in tags:
-            tagtext = t.get_text() + '\n\n'
-            text += tagtext
-
-        countrymatches = get_country_matches(text, countries, tag)
-        criterion = places['countrycode'].map(lambda x: x in countrymatches)
-
-        matches = get_place_matches(text, places[criterion], tag)
-        print 'Matched %i places in %i countries.' % (len(matches),
-                                                      len(countrymatches))
-
-        matches = DataFrame({'row_index': matches})
-
-        # Originally, wanted to put the publication date for 'ppub' but not
-        # all articles have that.
-
-        try:
-            matches['year'] = int(articlesoup.front.find(name='pub-date', attrs={'pub-type': 'ppub'}).year.get_text())
-        except:
-            matches['year'] = int(articlesoup.front.find(name='pub-date').year.get_text())
-
-        try:
-            matches['journal'] = articlesoup.front.find('journal-title').get_text()
-        except:
-            pass
-
-        try:
-            matches['doi'] = articlesoup.front.find(name='article-id', attrs={'pub-id-type': 'doi'}).get_text()
-        except:
-            pass
-
-        try:
-            matches['pmid'] = articlesoup.front.find(name='article-id', attrs={'pub-id-type': 'pmid'}).get_text()
-        except:
-            pass
-
+        matches = get_single_article_matches(path, places, countries, tag)
         allmatches = allmatches.append(matches, ignore_index=True)
+        print(('Matches in article %i of %i: %i.'
+              ' Total matches: %i' % (i+1, n, len(matches), len(allmatches))))
+    return(allmatches)
 
-        print 'Total matches: %i' % len(allmatches.index)
+
+def get_all_matches_parallel(articlepaths, places, countries, tag):
+    pool = Pool(processes=4)
+    allmatches = DataFrame()
+    n = len(articlepaths)
+    partial_get_single_article_matches = partial(get_single_article_matches,
+                                                 places=places,
+                                                 countries=countries,
+                                                 tag=tag)
+    matches_list = pool.map(partial_get_single_article_matches, articlepaths)
+    allmatches = pd.concat(matches_list)
+    return(allmatches)
+
+
+def get_all_matches_starmap(articlepaths, places, countries, tag):
+    pool = Pool(processes=4)
+    allmatches = DataFrame()
+    n = len(articlepaths)
+    pathzip = list(zip(articlepaths, repeat(places), repeat(countries), repeat(tag)))
+    # partial_get_single_article_matches = partial(get_single_article_matches,
+    #                                              places=places,
+    #                                              countries=countries,
+    #                                              tag=tag)
+    matches_list = pool.starmap(get_single_article_matches, pathzip)
+    allmatches = pd.concat(matches_list)
     return(allmatches)
 
 
@@ -157,14 +129,14 @@ def get_all_matches(articlepaths, places, countries, tag):
 
 
 def main():
-    articledir, geonamefile, tag = argv
-    articlepaths = get_article_paths(testdir)
-    places = get_geoname_dataframe(cities1000)
-    countries = get_countryinfo_dataframe(countryInfo)
+    articlepaths, places, countries = build_test_paths()
+    tag = 'p'
+    allmatches = get_all_matches(articlepaths, places, countries, tag)
     # counts = count_all_matches(articlepaths, places, countries, tag)
     # joined = counts.join(places)
-    matches.to_csv(outdir + 'matched_places.csv', encoding='utf-8')
+    # matches.to_csv(outdir + 'matched_places.csv', encoding='utf-8')
 
 
 if __name__ == '__main__':
     main()
+
