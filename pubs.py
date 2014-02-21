@@ -5,6 +5,7 @@ from functools import partial
 from multiprocessing import Pool, cpu_count, Lock, Process, Queue, current_process
 from itertools import repeat, count, zip_longest
 import time
+import re
 
 import numpy as np
 from pandas import Series, DataFrame
@@ -65,8 +66,9 @@ class article:
         # the text, we append its ISO code to the 'countries' list.
         for row_index, row in all_countries.iterrows():
             country_name = row.loc['Country']
-            count = self.text.count(country_name)
-            if count > 0:
+            country_name_re = r'\b' + country_name + r'\b'
+            x = re.search(country_name_re, self.text)
+            if x:
                 self.countries.append(row.loc['ISO'])
 
     def match_places(self, all_places):
@@ -78,8 +80,9 @@ class article:
         keep = all_places['countrycode'].map(lambda x: x in self.countries)
         for row_index, row in all_places[keep].iterrows():
             place_name = row.loc['name']
-            count = self.text.count(place_name)
-            if count > 0:
+            place_name_re = r'\b' + place_name + r'\b'
+            x = re.search(place_name_re, self.text)
+            if x:
                 self.places.append(row)
         self.places = DataFrame(self.places)
 
@@ -189,52 +192,6 @@ def match_places_in_article(paths_queue, matches_queue):
         x.match_countries(countries)
         x.match_places(places)
         matches_queue.put(x.give_dataframe())
-
-
-# def get_all_matches(articlepaths, places, countries, tag):
-#     allmatches = DataFrame()
-#     n = len(articlepaths)
-#     for i, path in enumerate(articlepaths):
-#         matches = match_places_in_article(path, places, countries, tag)
-#         allmatches = allmatches.append(matches, ignore_index=True)
-#         print(('Matches in article %i of %i: %i.'
-#               ' Total matches: %i' % (i+1, n, len(matches), len(allmatches))))
-#     return(allmatches)
-
-
-# def get_all_matches_parallel(articlepaths, places, countries, tag):
-#     pool = Pool(processes=4)
-#     allmatches = DataFrame()
-#     n = len(articlepaths)
-#     partial_match_places_in_article = partial(match_places_in_article,
-#                                                  places=places,
-#                                                  countries=countries,
-#                                                  tag=tag)
-#     matches_list = pool.map(partial_match_places_in_article, articlepaths)
-#     allmatches = pd.concat(matches_list)
-#     return(allmatches)
-
-
-# def get_all_matches_starmap(articlepaths, places, countries, tag,
-#                             processes=int(cpu_count()/2)):
-#     pool = Pool(processes=processes)
-#     allmatches = DataFrame()
-#     n = len(articlepaths)
-#     pathzip = zip(articlepaths, repeat(places), repeat(countries),
-#                   repeat(tag), count(1), repeat(n))
-#     matches_list = pool.starmap(match_places_in_article, pathzip,
-#                                 chunk_size=10)
-#     pool.close()
-#     allmatches = pd.concat(matches_list)
-#     return(allmatches)
-
-# def count_all_matches(articlepaths, places, countries, tag):
-#     
-#     counts = Counter(allmatches)
-#     counts = Series(counts)
-#     counts = DataFrame(counts)
-#     counts.columns = ["count"]
-#     return(counts)
 
 
 def main():
