@@ -38,4 +38,5 @@ nosetests.xml
 # Data Directories
 data/
 out/
+laura_out/
 .ipynb_checkpoints/
